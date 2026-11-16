@@ -1,0 +1,9 @@
+{
+  "appId": "app.nutritrack.mobile",
+  "appName": "NutriTrack",
+  "webDir": "dist",
+  "backgroundColor": "#f5f6f1",
+  "android": {
+    "allowMixedContent": false
+  }
+}

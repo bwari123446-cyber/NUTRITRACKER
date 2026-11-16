@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f6f1">
+  <meta name="description" content="A calm, personal space to keep track of meals, nutrition and hydration.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NutriTrack">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <title>NutriTrack</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("nutritrackTheme");
+      document.documentElement.dataset.theme = savedTheme || "light";
+    } catch (error) {}
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f1;
+      --surface: #fff;
+      --surface-soft: #f0f2eb;
+      --line: #e8eae2;
+      --ink: #1c261f;
+      --muted: #788177;
+      --faint: #a4aaa1;
+      --green: #2e6448;
+      --green-deep: #234e38;
+      --green-soft: #e8f1e9;
+      --lime: #d7edaa;
+      --orange: #e9a160;
+      --blue: #6b9fc2;
+      --pink: #d68084;
+      --shadow: 0 12px 32px #2633220a;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #111713;
+      --surface: #1a221d;
+      --surface-soft: #242d27;
+      --line: #303b33;
+      --ink: #f1f3ed;
+      --muted: #a0aaa1;
+      --faint: #727d73;
+      --green: #aad9b2;
+      --green-deep: #203d2c;
+      --green-soft: #24352a;
+      --lime: #d7edaa;
+      --orange: #f0b879;
+      --blue: #8bb9d6;
+      --pink: #e29a9d;
+      --shadow: 0 12px 32px #00000020;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: env(safe-area-inset-top, 0px) 0 var(--safe-bottom);
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, a:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--green) 55%, transparent);
+      outline-offset: 3px;
+    }
+    button:disabled { cursor: not-allowed; opacity: .55; }
+    .shell { width: min(100%, 560px); min-height: 100vh; margin: 0 auto; padding: 0 20px 112px; }
+    .topbar { height: 66px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 780; letter-spacing: -.04em; font-size: 19px; }
+    .brand-mark {
+      width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px;
+      background: var(--green); color: #fff; font-size: 17px; font-weight: 800;
+    }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .icon-button {
+      width: 40px; height: 40px; display: grid; place-items: center; border: 0;
+      border-radius: 50%; background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+      cursor: pointer; font-size: 18px;
+    }
+    .avatar {
+      width: 38px; height: 38px; display: grid; place-items: center; border: 0;
+      border-radius: 50%; background: var(--green-soft); color: var(--green);
+      font-weight: 800; cursor: pointer;
+    }
+    .view { display: none; }
+    .view.active { display: block; animation: appear .2s ease-out; }
+    @keyframes appear { from { opacity: .55; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    .greeting { margin: 18px 0 3px; color: var(--muted); font-size: 13px; font-weight: 650; }
+    h1 { margin: 0; font-size: 29px; line-height: 1.16; letter-spacing: -.055em; font-weight: 760; }
+    h2 { margin: 0; font-size: 19px; letter-spacing: -.035em; }
+    h3 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
+    .subtle { color: var(--muted); }
+    .date-switch { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 14px; }
+    .date-switch strong { font-size: 14px; }
+    .date-buttons { display: flex; gap: 6px; }
+    .date-buttons button {
+      width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 11px;
+      background: var(--surface); cursor: pointer; font-size: 17px;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 22px;
+      padding: 18px; box-shadow: var(--shadow);
+    }
+    .hero-card {
+      position: relative; overflow: hidden; min-height: 213px; padding: 20px;
+      background: var(--green-deep); border: 0; color: #f8fff8;
+    }
+    .hero-card:after {
+      content: ""; position: absolute; width: 190px; height: 190px; top: -88px; right: -54px;
+      border: 1px solid #ffffff20; border-radius: 50%; box-shadow: 0 0 0 25px #ffffff08, 0 0 0 52px #ffffff06;
+    }
+    .hero-heading { display: flex; justify-content: space-between; gap: 12px; position: relative; z-index: 1; }
+    .eyebrow { color: #d2e6d4; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+    .hero-heading h2 { margin-top: 3px; font-size: 22px; color: #fff; }
+    .goal-badge { height: fit-content; padding: 6px 9px; border: 1px solid #ffffff35; border-radius: 99px; font-size: 11px; color: #e5f1e4; }
+    .calorie-row { display: flex; align-items: flex-end; gap: 8px; margin-top: 20px; position: relative; z-index: 1; }
+    .calorie-row strong { font-size: 46px; line-height: .95; letter-spacing: -.06em; }
+    .calorie-row span { padding-bottom: 4px; color: #d2e6d4; font-size: 13px; }
+    .hero-track { height: 7px; margin-top: 16px; overflow: hidden; border-radius: 99px; background: #ffffff25; position: relative; z-index: 1; }
+    .hero-track i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--lime); transition: width .4s ease; }
+    .hero-foot { display: flex; justify-content: space-between; margin-top: 8px; color: #d2e6d4; font-size: 12px; position: relative; z-index: 1; }
+    .macro-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+    .macro-card { padding: 14px 13px; }
+    .macro-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; font-weight: 650; }
+    .macro-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--macro-color); }
+    .macro-card strong { display: block; margin-top: 7px; font-size: 18px; letter-spacing: -.04em; }
+    .macro-card small { color: var(--muted); font-size: 10px; }
+    .macro-track { height: 4px; margin-top: 9px; overflow: hidden; border-radius: 8px; background: var(--surface-soft); }
+    .macro-track i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--macro-color); }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; margin: 24px 2px 11px; }
+    .text-button { padding: 6px 0; border: 0; background: none; color: var(--green); font-size: 13px; font-weight: 750; cursor: pointer; }
+    .water-card { margin-top: 12px; }
+    .water-header { display: flex; align-items: flex-start; justify-content: space-between; }
+    .water-value { margin-top: 9px; font-size: 29px; font-weight: 760; letter-spacing: -.05em; }
+    .water-value small { color: var(--muted); font-size: 13px; font-weight: 500; letter-spacing: 0; }
+    .water-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 13px; background: #eaf3f7; font-size: 18px; }
+    :root[data-theme="dark"] .water-icon { background: #263c43; }
+    .water-track { height: 8px; margin: 12px 0 14px; overflow: hidden; border-radius: 99px; background: var(--surface-soft); }
+    .water-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--blue); transition: width .35s ease; }
+    .water-actions { display: flex; align-items: center; gap: 8px; }
+    .button {
+      min-height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 13px;
+      background: var(--surface); font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .button.primary { border-color: var(--green); background: var(--green); color: #fff; }
+    .button.soft { border: 0; background: var(--green-soft); color: var(--green); }
+    .button.full { width: 100%; }
+    .meal-list { display: grid; gap: 8px; }
+    .meal-entry {
+      min-height: 62px; display: flex; align-items: center; gap: 12px;
+      padding: 11px 13px; border: 1px solid var(--line); border-radius: 16px;
+      background: var(--surface);
+    }
+    .meal-entry-icon { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 38px; border-radius: 13px; background: var(--surface-soft); font-size: 17px; }
+    .meal-entry-main { min-width: 0; flex: 1; }
+    .meal-entry-main strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+    .meal-entry-main span { display: block; color: var(--muted); font-size: 11px; }
+    .meal-kcal { white-space: nowrap; font-size: 13px; font-weight: 750; }
+    .remove-meal { width: 30px; height: 30px; border: 0; border-radius: 10px; background: var(--surface-soft); color: var(--muted); cursor: pointer; }
+    .empty-state { padding: 25px 14px; border: 1px dashed var(--line); border-radius: 16px; text-align: center; color: var(--muted); font-size: 13px; }
+    .empty-state strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 14px; }
+    .diary-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0; }
+    .summary-tile { padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+    .summary-tile span { color: var(--muted); font-size: 11px; }
+    .summary-tile strong { display: block; margin-top: 3px; font-size: 20px; letter-spacing: -.04em; }
+    .insight-card { margin-top: 12px; }
+    .chart { height: 180px; display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 9px; padding: 18px 3px 0; }
+    .chart-day { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 7px; min-width: 0; }
+    .chart-value { color: var(--muted); font-size: 9px; white-space: nowrap; }
+    .chart-bar-wrap { width: min(26px, 100%); height: 118px; display: flex; align-items: flex-end; }
+    .chart-bar { width: 100%; min-height: 3px; border-radius: 9px 9px 4px 4px; background: var(--green); opacity: .83; }
+    .chart-day.today .chart-bar { background: var(--orange); }
+    .chart-label { color: var(--muted); font-size: 10px; }
+    .insight-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .insight-stat { padding: 14px; background: var(--surface-soft); border-radius: 15px; }
+    .insight-stat span { display: block; color: var(--muted); font-size: 11px; }
+    .insight-stat strong { display: block; margin-top: 3px; font-size: 19px; letter-spacing: -.04em; }
+    .profile-card { margin-top: 16px; }
+    .profile-head { display: flex; align-items: center; gap: 13px; }
+    .profile-avatar { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 17px; background: var(--green-soft); color: var(--green); font-weight: 800; font-size: 18px; }
+    .profile-head p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .settings-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .field { display: grid; gap: 6px; }
+    .field label { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .field input {
+      width: 100%; min-height: 46px; padding: 0 12px; border: 1px solid var(--line);
+      border-radius: 12px; background: var(--surface-soft); color: var(--ink);
+    }
+    .settings-form .button { grid-column: 1 / -1; margin-top: 5px; }
+    .settings-note { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
+    .account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .account-row p { margin: 0; font-size: 13px; font-weight: 700; }
+    .account-row small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .status { color: var(--muted); font-size: 11px; }
+    .status.good { color: var(--green); }
+    .status.error { color: #bc5257; }
+    .nav {
+      position: fixed; z-index: 10; inset: auto 0 0; display: grid; grid-template-columns: repeat(4, 1fr);
+      width: min(100%, 560px); margin: 0 auto; padding: 7px 12px calc(7px + var(--safe-bottom));
+      border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 93%, transparent);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+    .nav button {
+      min-height: 54px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+      gap: 2px; border: 0; border-radius: 13px; background: none; color: var(--muted);
+      font-size: 10px; font-weight: 650; cursor: pointer;
+    }
+    .nav button[aria-current="page"] { color: var(--green); }
+    .nav-icon { font-size: 19px; line-height: 1; }
+    .fab {
+      position: fixed; z-index: 9; right: max(calc((100vw - 520px) / 2 + 18px), 20px);
+      bottom: calc(83px + var(--safe-bottom)); width: 54px; height: 54px;
+      border: 0; border-radius: 19px; background: var(--green); color: #fff;
+      box-shadow: 0 8px 20px #234e3840; font-size: 27px; cursor: pointer;
+    }
+    .toast {
+      position: fixed; z-index: 30; left: 50%; bottom: calc(145px + var(--safe-bottom)); width: max-content;
+      max-width: calc(100vw - 36px); padding: 11px 15px; border-radius: 13px;
+      background: var(--ink); color: var(--surface); font-size: 13px; opacity: 0;
+      pointer-events: none; transform: translate(-50%, 8px); transition: opacity .2s, transform .2s;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    dialog {
+      width: min(100%, 560px); max-height: min(90vh, 760px); margin: auto auto 0; padding: 0;
+      overflow: auto; border: 1px solid var(--line); border-radius: 25px 25px 0 0;
+      background: var(--surface); color: var(--ink); box-shadow: 0 -12px 50px #0002;
+    }
+    dialog::backdrop { background: #10171080; backdrop-filter: blur(3px); }
+    .sheet-inner { padding: 22px 20px calc(22px + var(--safe-bottom)); }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .sheet-close { width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--surface-soft); cursor: pointer; font-size: 19px; }
+    .food-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .food-fields .wide { grid-column: 1 / -1; }
+    .meal-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 14px; }
+    .meal-picker button { min-height: 38px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; }
+    .meal-picker button.selected { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+    .food-fields .button { min-height: 48px; margin-top: 3px; }
+    .install { display: none; }
+    .install.visible { display: inline-grid; }
+    @media (min-width: 700px) {
+      body { padding: 24px 0; }
+      .shell { min-height: calc(100vh - 48px); padding-bottom: 40px; }
+      .nav { bottom: 20px; border: 1px solid var(--line); border-radius: 19px; padding-bottom: 7px; box-shadow: var(--shadow); }
+      .fab { bottom: 100px; }
+      .toast { bottom: 175px; }
+      dialog { margin: auto; border-radius: 25px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">n</span><span>nutritrack</span></div>
+      <div class="top-actions">
+        <button class="icon-button install" id="installApp" type="button" aria-label="Install app">↓</button>
+        <button class="icon-button" id="themeToggle" type="button" aria-label="Switch color theme">☾</button>
+        <button class="avatar" id="accountShortcut" type="button" aria-label="Open profile">N</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="view active" id="todayView" aria-labelledby="todayTitle">
+        <p class="greeting" id="greeting">A fresh start</p>
+        <h1 id="todayTitle">Make today yours.</h1>
+        <div class="date-switch">
+          <strong id="activeDate"></strong>
+          <div class="date-buttons">
+            <button type="button" id="previousDay" aria-label="Previous day">‹</button>
+            <button type="button" id="nextDay" aria-label="Next day">›</button>
+          </div>
+        </div>
+        <article class="card hero-card" aria-label="Daily calorie progress">
+          <div class="hero-heading">
+            <div><div class="eyebrow">DAILY ENERGY</div><h2>Steady progress</h2></div>
+            <span class="goal-badge" id="goalBadge">Goal 2,000 kcal</span>
+          </div>
+          <div class="calorie-row"><strong id="calories">0</strong><span>kcal logged</span></div>
+          <div class="hero-track"><i id="calorieProgress"></i></div>
+          <div class="hero-foot"><span id="calorieLeft">2,000 kcal left</span><span id="caloriePercent">0%</span></div>
+        </article>
+        <div class="macro-row" aria-label="Macronutrients">
+          <article class="card macro-card" style="--macro-color:var(--green)">
+            <div class="macro-top"><span>Protein</span><i class="macro-dot"></i></div><strong id="protein">0 g</strong><div class="macro-track"><i id="proteinProgress"></i></div><small id="proteinGoal">of 100 g</small>
+          </article>
+          <article class="card macro-card" style="--macro-color:var(--orange)">
+            <div class="macro-top"><span>Carbs</span><i class="macro-dot"></i></div><strong id="carbs">0 g</strong><div class="macro-track"><i id="carbsProgress"></i></div><small id="carbsGoal">of 250 g</small>
+          </article>
+          <article class="card macro-card" style="--macro-color:var(--pink)">
+            <div class="macro-top"><span>Fat</span><i class="macro-dot"></i></div><strong id="fat">0 g</strong><div class="macro-track"><i id="fatProgress"></i></div><small id="fatGoal">of 70 g</small>
+          </article>
+        </div>
+        <article class="card water-card">
+          <div class="water-header">
+            <div><div class="eyebrow subtle">HYDRATION</div><div class="water-value"><span id="water">0</span> <small>/ <span id="waterGoal">2,000</span> ml</small></div></div>
+            <span class="water-icon" aria-hidden="true">💧</span>
+          </div>
+          <div class="water-track"><i id="waterProgress"></i></div>
+          <div class="water-actions">
+            <button class="button soft" id="addWater" type="button">＋ 250 ml</button>
+            <button class="button" id="resetWater" type="button">Reset</button>
+          </div>
+        </article>
+        <div class="section-heading"><h2>Today’s food</h2><button class="text-button" type="button" data-open="diary">See diary</button></div>
+        <div class="meal-list" id="todayMeals"></div>
+      </section>
+
+      <section class="view" id="diaryView" aria-labelledby="diaryTitle">
+        <p class="greeting">Your daily record</p>
+        <h1 id="diaryTitle">Food diary</h1>
+        <div class="date-switch">
+          <strong id="diaryDate"></strong>
+          <div class="date-buttons">
+            <button type="button" id="diaryPrevious" aria-label="Previous day">‹</button>
+            <button type="button" id="diaryNext" aria-label="Next day">›</button>
+          </div>
+        </div>
+        <div class="diary-summary">
+          <div class="summary-tile"><span>Energy</span><strong id="diaryCalories">0 kcal</strong></div>
+          <div class="summary-tile"><span>Entries</span><strong id="diaryCount">0 foods</strong></div>
+        </div>
+        <div id="diaryMeals"></div>
+      </section>
+
+      <section class="view" id="insightsView" aria-labelledby="insightsTitle">
+        <p class="greeting">Small steps add up</p>
+        <h1 id="insightsTitle">Your week</h1>
+        <article class="card insight-card">
+          <div class="section-heading" style="margin:0 0 8px"><h2>Energy logged</h2><span class="subtle" style="font-size:11px">Last 7 days</span></div>
+          <div class="chart" id="weeklyChart" aria-label="Calories logged over the last seven days"></div>
+          <div class="insight-stats">
+            <div class="insight-stat"><span>Daily average</span><strong id="weeklyAverage">0 kcal</strong></div>
+            <div class="insight-stat"><span>Meals logged</span><strong id="weeklyMeals">0</strong></div>
+          </div>
+        </article>
+        <article class="card insight-card">
+          <div class="section-heading" style="margin:0 0 8px"><h2>Hydration</h2><span class="subtle" style="font-size:11px">Last 7 days</span></div>
+          <p class="subtle" id="weeklyWater" style="margin:0;font-size:13px"></p>
+        </article>
+        <p class="settings-note">These summaries are for your personal tracking and aren’t medical advice.</p>
+      </section>
+
+      <section class="view" id="profileView" aria-labelledby="profileTitle">
+        <p class="greeting">Your preferences</p>
+        <h1 id="profileTitle">Profile</h1>
+        <article class="card profile-card">
+          <div class="profile-head">
+            <div class="profile-avatar" aria-hidden="true">⌂</div>
+            <div><h2>On this device</h2><p>Your diary is stored in this browser.</p></div>
+          </div>
+          <div class="status good" role="status">Your diary works offline on this device.</div>
+        </article>
+        <article class="card profile-card">
+          <div><h2>Back up your diary</h2><p class="settings-note">Save a copy before clearing browser data or moving to a new device.</p></div>
+          <div class="water-actions" style="margin-top:14px">
+            <button class="button primary" id="exportBackup" type="button">Download backup</button>
+            <button class="button" id="importBackupButton" type="button">Restore backup</button>
+            <input id="importBackup" type="file" accept="application/json,.json" hidden>
+          </div>
+        </article>
+        <article class="card profile-card">
+          <div><h2>Daily targets</h2><p class="settings-note" style="margin-top:4px">Set personal reference points. These aren’t prescriptions.</p></div>
+          <form class="settings-form" id="settingsForm">
+            <div class="field"><label for="settingCalories">Energy (kcal)</label><input id="settingCalories" type="number" min="1" max="20000" required></div>
+            <div class="field"><label for="settingWater">Water (ml)</label><input id="settingWater" type="number" min="1" max="20000" required></div>
+            <div class="field"><label for="settingProtein">Protein (g)</label><input id="settingProtein" type="number" min="0" max="1000" required></div>
+            <div class="field"><label for="settingCarbs">Carbs (g)</label><input id="settingCarbs" type="number" min="0" max="1000" required></div>
+            <div class="field"><label for="settingFat">Fat (g)</label><input id="settingFat" type="number" min="0" max="1000" required></div>
+            <button class="button primary" type="submit">Save targets</button>
+          </form>
+        </article>
+        <article class="card profile-card">
+          <div><h2>Appearance</h2><p class="settings-note">Choose the look that feels right to you.</p></div>
+          <button class="button" id="profileThemeToggle" type="button" style="margin-top:14px">Switch to dark mode</button>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <button class="fab" id="openFood" type="button" aria-label="Log a food">＋</button>
+  <nav class="nav" aria-label="Main navigation">
+    <button type="button" data-view="today" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span>Today</button>
+    <button type="button" data-view="diary"><span class="nav-icon" aria-hidden="true">▤</span>Diary</button>
+    <button type="button" data-view="insights"><span class="nav-icon" aria-hidden="true">◷</span>Insights</button>
+    <button type="button" data-view="profile"><span class="nav-icon" aria-hidden="true">○</span>Profile</button>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="foodDialog" aria-labelledby="foodDialogTitle">
+    <div class="sheet-inner">
+      <div class="sheet-head"><h2 id="foodDialogTitle">Add to your diary</h2><button class="sheet-close" type="button" data-close="foodDialog" aria-label="Close">×</button></div>
+      <form id="foodForm">
+        <div class="meal-picker" id="mealPicker" aria-label="Meal type"></div>
+        <div class="food-fields">
+          <div class="field wide"><label for="foodName">Food name</label><input id="foodName" name="name" maxlength="80" autocomplete="off" placeholder="e.g. Oatmeal with berries" required></div>
+          <div class="field wide"><label for="foodCalories">Energy (kcal)</label><input id="foodCalories" name="calories" type="number" inputmode="decimal" min="0" max="100000" step="1" placeholder="0" required></div>
+          <div class="field"><label for="foodProtein">Protein (g)</label><input id="foodProtein" name="protein" type="number" inputmode="decimal" min="0" max="10000" step="0.1" placeholder="0"></div>
+          <div class="field"><label for="foodCarbs">Carbs (g)</label><input id="foodCarbs" name="carbs" type="number" inputmode="decimal" min="0" max="10000" step="0.1" placeholder="0"></div>
+          <div class="field"><label for="foodFat">Fat (g)</label><input id="foodFat" name="fat" type="number" inputmode="decimal" min="0" max="10000" step="0.1" placeholder="0"></div>
+          <button class="button primary full wide" type="submit">Save food</button>
+        </div>
+        <p class="settings-note">Use values from a food label or a trusted nutrition source.</p>
+      </form>
+    </div>
+  </dialog>
+
+  <script>
+    "use strict";
+    const categories = ["Breakfast", "Lunch", "Dinner", "Snack"];
+    const icons = { Breakfast: "🍳", Lunch: "🥗", Dinner: "🍲", Snack: "🍎" };
+    const defaults = { calories: 2000, water: 2000, protein: 100, carbs: 250, fat: 70 };
+    const $ = id => document.getElementById(id);
+    const todayKey = () => {
+      const d = new Date();
+      return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
+    };
+    const parseDate = key => {
+      const [year, month, day] = key.split("-").map(Number);
+      return new Date(year, month - 1, day, 12);
+    };
+    const dateKey = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+    const formatDate = (key, options) => parseDate(key).toLocaleDateString(undefined, options);
+    const esc = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    const newId = () => typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const number = value => Math.round(Number(value) || 0).toLocaleString();
+    const localDate = todayKey();
+    let activeDate = localDate;
+    let mealType = "Breakfast";
+    let toastTimer;
+    let appState;
+
+    function emptyState() {
+      return { days: {}, settings: { ...defaults, updated_at: "1970-01-01T00:00:00.000Z" } };
+    }
+    function cleanMeal(meal) {
+      if (!meal || typeof meal !== "object" || typeof meal.name !== "string") return null;
+      const category = categories.includes(meal.type) ? meal.type : "Snack";
+      const cleanNumber = value => Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 0;
+      return {
+        id: typeof meal.id === "string" ? meal.id : newId(),
+        name: meal.name.slice(0, 80),
+        type: category,
+        cal: cleanNumber(meal.cal),
+        protein: cleanNumber(meal.protein),
+        carbs: cleanNumber(meal.carbs),
+        fat: cleanNumber(meal.fat)
+      };
+    }
+    function readState() {
+      let state = emptyState();
+      try {
+        const saved = localStorage.getItem("nutritrackData");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            state = emptyState();
+            if (parsed.days && typeof parsed.days === "object") {
+              Object.entries(parsed.days).forEach(([key, day]) => {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !day || typeof day !== "object") return;
+                state.days[key] = {
+                  meals: Array.isArray(day.meals) ? day.meals.map(cleanMeal).filter(Boolean) : [],
+                  water: Math.max(0, Number(day.water) || 0),
+                  updated_at: typeof day.updated_at === "string" ? day.updated_at : "1970-01-01T00:00:00.000Z"
+                };
+              });
+            }
+            if (parsed.settings && typeof parsed.settings === "object") {
+              state.settings = {
+                ...defaults,
+                ...Object.fromEntries(Object.keys(defaults).map(key => [key, Math.max(0, Number(parsed.settings[key]) || defaults[key])])),
+                updated_at: typeof parsed.settings.updated_at === "string" ? parsed.settings.updated_at : "1970-01-01T00:00:00.000Z"
+              };
+            }
+          }
+        } else {
+          const oldMeals = JSON.parse(localStorage.getItem("nutritrackMeals") || "[]");
+          const oldWater = Number(localStorage.getItem("nutritrackWater")) || 0;
+          if (Array.isArray(oldMeals) && oldMeals.length || oldWater > 0) {
+            state.days[localDate] = {
+              meals: Array.isArray(oldMeals) ? oldMeals.map(cleanMeal).filter(Boolean) : [],
+              water: Math.max(0, oldWater),
+              updated_at: new Date().toISOString()
+            };
+          }
+        }
+      } catch (error) {
+        console.error("Could not read saved NutriTrack data:", error);
+        showToast("Saved data could not be read.");
+      }
+      return state;
+    }
+    appState = readState();
+    function getDay(key) {
+      if (!appState.days[key]) appState.days[key] = { meals: [], water: 0, updated_at: "1970-01-01T00:00:00.000Z" };
+      return appState.days[key];
+    }
+    function persist(dayKey, settingsChanged) {
+      if (dayKey) getDay(dayKey).updated_at = new Date().toISOString();
+      try {
+        localStorage.setItem("nutritrackData", JSON.stringify(appState));
+      } catch (error) {
+        console.error("Could not save NutriTrack data:", error);
+        showToast("Could not save. Check device storage.");
+      }
+      window.dispatchEvent(new CustomEvent("nutritrack:changed", { detail: { day: dayKey || null, settings: !!settingsChanged } }));
+    }
+    function showToast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+    function totalsFor(day) {
+      return day.meals.reduce((total, meal) => {
+        total.calories += meal.cal;
+        total.protein += meal.protein;
+        total.carbs += meal.carbs;
+        total.fat += meal.fat;
+        return total;
+      }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    }
+    function mealMarkup(meals, remove) {
+      if (!meals.length) return '<div class="empty-state"><strong>Nothing logged yet</strong>Add a food whenever you’re ready.</div>';
+      return meals.map(meal => `
+        <article class="meal-entry">
+          <span class="meal-entry-icon" aria-hidden="true">${icons[meal.type]}</span>
+          <div class="meal-entry-main"><strong>${esc(meal.name)}</strong><span>${esc(meal.type)} · ${number(meal.protein)}g protein</span></div>
+          <span class="meal-kcal">${number(meal.cal)} kcal</span>
+          ${remove ? `<button class="remove-meal" type="button" data-remove="${esc(meal.id)}" aria-label="Remove ${esc(meal.name)}">×</button>` : ""}
+        </article>`).join("");
+    }
+    function renderMeals() {
+      const day = getDay(activeDate);
+      const totals = totalsFor(day);
+      const goals = appState.settings;
+      const isToday = activeDate === localDate;
+      const dateText = isToday ? "Today · " + formatDate(activeDate, { weekday: "long", month: "long", day: "numeric" }) : formatDate(activeDate, { weekday: "long", month: "long", day: "numeric" });
+      $("activeDate").textContent = dateText;
+      $("diaryDate").textContent = dateText;
+      $("nextDay").disabled = isToday;
+      $("diaryNext").disabled = isToday;
+      $("greeting").textContent = isToday ? "A fresh start" : "Your personal record";
+      $("calories").textContent = number(totals.calories);
+      $("goalBadge").textContent = "Goal " + number(goals.calories) + " kcal";
+      $("calorieLeft").textContent = number(Math.max(0, goals.calories - totals.calories)) + " kcal left";
+      $("caloriePercent").textContent = Math.round(Math.min(100, totals.calories / Math.max(1, goals.calories) * 100)) + "%";
+      $("calorieProgress").style.width = Math.min(100, totals.calories / Math.max(1, goals.calories) * 100) + "%";
+      $("water").textContent = number(day.water);
+      $("waterGoal").textContent = number(goals.water);
+      $("waterProgress").style.width = Math.min(100, day.water / Math.max(1, goals.water) * 100) + "%";
+      ["protein", "carbs", "fat"].forEach(key => {
+        const value = totals[key];
+        const goal = goals[key];
+        $(key).textContent = number(value) + " g";
+        $(key + "Goal").textContent = "of " + number(goal) + " g";
+        $(key + "Progress").style.width = Math.min(100, value / Math.max(1, goal) * 100) + "%";
+      });
+      $("todayMeals").innerHTML = mealMarkup(day.meals.slice(-3).reverse(), false);
+      $("diaryCalories").textContent = number(totals.calories) + " kcal";
+      $("diaryCount").textContent = day.meals.length + (day.meals.length === 1 ? " food" : " foods");
+      $("diaryMeals").innerHTML = categories.map(category => {
+        const meals = day.meals.filter(meal => meal.type === category);
+        if (!meals.length) return "";
+        return `<div class="section-heading"><h2>${icons[category]} ${category}</h2><span class="subtle" style="font-size:12px">${number(meals.reduce((sum, meal) => sum + meal.cal, 0))} kcal</span></div><div class="meal-list">${mealMarkup(meals, true)}</div>`;
+      }).join("") || '<div class="empty-state"><strong>Your diary is clear</strong>Tap + to add your first food.</div>';
+      renderInsights();
+    }
+    function renderInsights() {
+      const keys = [];
+      for (let offset = 6; offset >= 0; offset--) {
+        const date = parseDate(localDate);
+        date.setDate(date.getDate() - offset);
+        keys.push(dateKey(date));
+      }
+      const records = keys.map(key => ({ key, day: appState.days[key] || { meals: [], water: 0 } }));
+      const calories = records.map(record => totalsFor(record.day).calories);
+      const total = calories.reduce((sum, value) => sum + value, 0);
+      const max = Math.max(appState.settings.calories, ...calories, 1);
+      $("weeklyChart").innerHTML = records.map((record, index) => {
+        const value = calories[index];
+        const height = Math.max(value ? 4 : 2, Math.min(100, value / max * 100));
+        return `<div class="chart-day${record.key === localDate ? " today" : ""}" aria-label="${esc(formatDate(record.key, { weekday: "long" }))}: ${number(value)} kcal">
+          <span class="chart-value">${value ? number(value) : "—"}</span><div class="chart-bar-wrap"><i class="chart-bar" style="height:${height}%"></i></div>
+          <span class="chart-label">${formatDate(record.key, { weekday: "short" })}</span></div>`;
+      }).join("");
+      $("weeklyAverage").textContent = number(Math.round(total / 7)) + " kcal";
+      $("weeklyMeals").textContent = String(records.reduce((sum, record) => sum + record.day.meals.length, 0));
+      const loggedWater = records.filter(record => record.day.water > 0);
+      const average = loggedWater.length ? Math.round(loggedWater.reduce((sum, record) => sum + record.day.water, 0) / loggedWater.length) : 0;
+      $("weeklyWater").textContent = loggedWater.length
+        ? `You logged water on ${loggedWater.length} of the last 7 days, averaging ${number(average)} ml on those days.`
+        : "Add water to your daily log to see your weekly summary.";
+    }
+    function renderSettings() {
+      Object.keys(defaults).forEach(key => {
+        const fieldKey = key === "calories" ? "Calories" : key[0].toUpperCase() + key.slice(1);
+        $("setting" + fieldKey).value = appState.settings[key];
+      });
+    }
+    function render() {
+      renderMeals();
+      renderSettings();
+    }
+    function setDate(key) {
+      if (key > localDate) return;
+      activeDate = key;
+      renderMeals();
+    }
+    function shiftDate(amount) {
+      const date = parseDate(activeDate);
+      date.setDate(date.getDate() + amount);
+      setDate(dateKey(date));
+    }
+    function openView(name) {
+      document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.id === name + "View"));
+      document.querySelectorAll(".nav [data-view]").forEach(button => {
+        if (button.dataset.view === name) button.setAttribute("aria-current", "page");
+        else button.removeAttribute("aria-current");
+      });
+      if (name === "profile") renderSettings();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      const dark = theme === "dark";
+      $("themeToggle").textContent = dark ? "☀" : "☾";
+      $("themeToggle").setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+      $("profileThemeToggle").textContent = dark ? "Switch to light mode" : "Switch to dark mode";
+      document.querySelector('meta[name="theme-color"]').content = dark ? "#111713" : "#f5f6f1";
+      try { localStorage.setItem("nutritrackTheme", theme); }
+      catch (error) { console.error("Could not save theme preference:", error); }
+    }
+    function drawMealPicker() {
+      $("mealPicker").innerHTML = categories.map(category =>
+        `<button type="button" class="${category === mealType ? "selected" : ""}" data-category="${category}" aria-pressed="${category === mealType}">${icons[category]} ${category}</button>`
+      ).join("");
+    }
+    function addWater(amount) {
+      const day = getDay(activeDate);
+      day.water = Math.min(20000, Math.max(0, day.water + amount));
+      persist(activeDate);
+      renderMeals();
+    }
+    function removeMeal(id) {
+      const day = getDay(activeDate);
+      day.meals = day.meals.filter(meal => meal.id !== id);
+      persist(activeDate);
+      renderMeals();
+      showToast("Food removed from your diary");
+    }
+
+    $("previousDay").addEventListener("click", () => shiftDate(-1));
+    $("nextDay").addEventListener("click", () => shiftDate(1));
+    $("diaryPrevious").addEventListener("click", () => shiftDate(-1));
+    $("diaryNext").addEventListener("click", () => shiftDate(1));
+    document.querySelectorAll(".nav [data-view]").forEach(button => button.addEventListener("click", () => openView(button.dataset.view)));
+    document.querySelectorAll("[data-open='diary']").forEach(button => button.addEventListener("click", () => openView("diary")));
+    $("openFood").addEventListener("click", () => {
+      drawMealPicker();
+      $("foodDialog").showModal();
+      setTimeout(() => $("foodName").focus(), 30);
+    });
+    document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => $(button.dataset.close).close()));
+    document.querySelectorAll("dialog").forEach(dialog => dialog.addEventListener("click", event => {
+      if (event.target === dialog) dialog.close();
+    }));
+    $("mealPicker").addEventListener("click", event => {
+      const button = event.target.closest("[data-category]");
+      if (!button) return;
+      mealType = button.dataset.category;
+      drawMealPicker();
+    });
+    $("foodForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!form.reportValidity()) return;
+      const numberFrom = name => Math.max(0, Number(form.elements[name].value) || 0);
+      getDay(activeDate).meals.push({
+        id: newId(),
+        name: form.elements.name.value.trim().slice(0, 80),
+        type: mealType,
+        cal: numberFrom("calories"),
+        protein: numberFrom("protein"),
+        carbs: numberFrom("carbs"),
+        fat: numberFrom("fat")
+      });
+      persist(activeDate);
+      renderMeals();
+      form.reset();
+      $("foodDialog").close();
+      showToast("Added to your diary");
+    });
+    $("diaryMeals").addEventListener("click", event => {
+      const button = event.target.closest("[data-remove]");
+      if (button) removeMeal(button.dataset.remove);
+    });
+    $("todayMeals").addEventListener("click", () => openView("diary"));
+    $("addWater").addEventListener("click", () => addWater(250));
+    $("resetWater").addEventListener("click", () => {
+      getDay(activeDate).water = 0;
+      persist(activeDate);
+      renderMeals();
+      showToast("Water log reset");
+    });
+    $("settingsForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!form.reportValidity()) return;
+      ["calories", "water", "protein", "carbs", "fat"].forEach(key => {
+        const fieldKey = key === "calories" ? "Calories" : key[0].toUpperCase() + key.slice(1);
+        appState.settings[key] = Number($("setting" + fieldKey).value);
+      });
+      appState.settings.updated_at = new Date().toISOString();
+      persist(null, true);
+      render();
+      showToast("Daily targets saved");
+    });
+    $("themeToggle").addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+    $("profileThemeToggle").addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+
+    const currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    setTheme(currentTheme);
+    $("accountShortcut").addEventListener("click", () => openView("profile"));
+    $("exportBackup").addEventListener("click", () => {
+      const backup = {
+        format: "nutritrack-backup",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        state: appState
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "nutritrack-backup-" + localDate + ".json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("Backup downloaded");
+    });
+    $("importBackupButton").addEventListener("click", () => $("importBackup").click());
+    $("importBackup").addEventListener("change", async event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        const backup = JSON.parse(await file.text());
+        if (backup.format !== "nutritrack-backup" || backup.version !== 1 || !backup.state || typeof backup.state !== "object") {
+          throw new Error("This file is not a supported NutriTrack backup.");
+        }
+        if (!window.confirm("Restore this backup? It will replace the diary currently saved in this browser.")) return;
+        const restored = emptyState();
+        if (backup.state.days && typeof backup.state.days === "object") {
+          Object.entries(backup.state.days).forEach(([key, day]) => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !day || typeof day !== "object") return;
+            restored.days[key] = {
+              meals: Array.isArray(day.meals) ? day.meals.map(cleanMeal).filter(Boolean) : [],
+              water: Math.max(0, Number(day.water) || 0),
+              updated_at: typeof day.updated_at === "string" ? day.updated_at : new Date().toISOString()
+            };
+          });
+        }
+        const savedSettings = backup.state.settings || {};
+        Object.keys(defaults).forEach(key => {
+          const value = Number(savedSettings[key]);
+          if (Number.isFinite(value) && value >= 0) restored.settings[key] = value;
+        });
+        restored.settings.updated_at = typeof savedSettings.updated_at === "string" ? savedSettings.updated_at : new Date().toISOString();
+        appState = restored;
+        activeDate = localDate;
+        persist();
+        render();
+        showToast("Backup restored");
+      } catch (error) {
+        console.error("Could not restore NutriTrack backup:", error);
+        showToast(error.message || "Could not restore this backup");
+      } finally {
+        event.target.value = "";
+      }
+    });
+    $("installApp").addEventListener("click", async () => {
+      if (!window.installPrompt) return;
+      window.installPrompt.prompt();
+      await window.installPrompt.userChoice;
+      window.installPrompt = null;
+      $("installApp").classList.remove("visible");
+    });
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      window.installPrompt = event;
+      $("installApp").classList.add("visible");
+    });
+    window.addEventListener("appinstalled", () => $("installApp").classList.remove("visible"));
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(error => {
+        console.error("Offline support could not be enabled:", error);
+        showToast("Offline support could not be enabled");
+      }));
+    }
+
+    render();
+  </script>
+</body>
+</html>
